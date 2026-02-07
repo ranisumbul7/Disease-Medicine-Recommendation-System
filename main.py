@@ -48,9 +48,23 @@ diseases_list = {15: 'Fungal infection', 4: 'Allergy', 16: 'GERD', 9: 'Chronic c
 # Model Prediction function
 def get_predicted_value(patient_symptoms):
     input_vector = np.zeros(len(symptoms_dict))
+    valid_symptoms = []
+
     for item in patient_symptoms:
-        input_vector[symptoms_dict[item]] = 1
-    return diseases_list[svc.predict([input_vector])[0]]
+        item = item.lower().replace(" ", "_")
+        if item in symptoms_dict:
+            input_vector[symptoms_dict[item]] = 1
+            valid_symptoms.append(item)
+
+    # DEBUG (optional)
+    print("Valid Symptoms:", valid_symptoms)
+    print("Vector Sum:", np.sum(input_vector))
+
+    if np.sum(input_vector) == 0:
+        return "No valid symptoms found"
+
+    pred_index = svc.predict([input_vector])[0]
+    return diseases_list[pred_index]
 
 
 
@@ -81,7 +95,7 @@ def home():
             # Split the user's input into a list of symptoms (assuming they are comma-separated)
             user_symptoms = [s.strip() for s in symptoms.split(',')]
             # Remove any extra characters, if any
-            user_symptoms = [symptom.strip("[]' ") for symptom in user_symptoms]
+            user_symptoms = [s.strip().lower().replace(" ", "_") for s in symptoms.split(',')]
             predicted_disease = get_predicted_value(user_symptoms)
             dis_des, precautions, medications, rec_diet, workout = helper(predicted_disease)
 
