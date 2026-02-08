@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify  # Import jsonify
+from flask import Flask, render_template, request, redirect, url_for
 import numpy as np
 import pandas as pd
 import pickle
@@ -69,6 +69,25 @@ def get_predicted_value(patient_symptoms):
 
 
 # creating routes========================================
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form.get('username')
+    password = request.form.get('password')
+
+    if username == "admin" and password == "123":
+        return redirect(url_for('dashboard'))
+    else:
+        return "Invalid credentials"
+    
+@app.route("/signup", methods=["POST"])
+def signup():
+    # signup logic
+    return redirect(url_for("front"))
+
+
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
 
 
 @app.route("/")

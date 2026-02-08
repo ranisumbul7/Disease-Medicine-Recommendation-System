@@ -19,16 +19,6 @@ html, body {
     background: white !important;
 }
 
-/* ===== Form Wrapper ===== */
-.form-card {
-    background: white;
-    padding: 30px;
-    border-radius: 18px;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.08);
-    max-width: 720px;
-    margin: auto;
-}
-
 /* ===== Label ===== */
 .form-card label {
     font-weight: 600;
@@ -67,7 +57,7 @@ html, body {
 
 /* ===== Predict Button ===== */
 .btn-predict {
-    background: #2563eb;
+    background: red;
     border: none;
     padding: 14px;
     border-radius: 14px;

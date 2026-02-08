@@ -1,50 +1,135 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bootstrap demo</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
-    <style>
-        body {
-            margin: 0;
-            height: 100vh;
-            background: url("/static/healthcare-clinic.jpg") no-repeat center center/cover;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+<head>
+<meta charset="UTF-8">
+<title>Healthcare Login</title>
 
-        .overlay {
-            padding: 50px;
-            border-radius: 20px;
-            text-align: center;
-        }
+<style>
+    body{
+        margin:0;
+        height:100vh;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        background:linear-gradient(135deg,#667eea,#764ba2);
+        font-family:Arial, sans-serif;
+    }
 
-        .overlay h1 {
-            color: black;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
+    .container{
+        background:#fff;
+        width:360px;
+        padding:30px;
+        border-radius:14px;
+        box-shadow:0 12px 30px rgba(0,0,0,0.25);
+    }
 
-        .btn-health {
-            padding: 15px 40px;
-            font-size: 20px;
-            border-radius: 30px;
-        }
-    </style>
+    h2{
+        text-align:center;
+        margin-bottom:20px;
+    }
+
+    input{
+        width:100%;
+        padding:10px;
+        margin:8px 0;
+        border-radius:8px;
+        border:1px solid #ccc;
+    }
+
+    input:focus{
+        outline:none;
+        border-color:#667eea;
+    }
+
+    button{
+        width:100%;
+        padding:10px;
+        margin-top:12px;
+        border:none;
+        border-radius:8px;
+        background:#667eea;
+        color:white;
+        font-size:15px;
+        cursor:pointer;
+    }
+
+    button:hover{
+        background:#5a67d8;
+    }
+
+    .switch{
+        text-align:center;
+        margin-top:15px;
+        font-size:14px;
+    }
+
+    .switch span{
+        color:#667eea;
+        cursor:pointer;
+        font-weight:bold;
+    }
+
+    .signup{
+        display:none;
+    }
+</style>
 </head>
 
 <body>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
 
-    <div class="overlay">
-        <h1>Welcome to Health Care Center</h1>
-        <a href="/healthcare" class="btn btn-danger btn-health">
-            Go to HealthCare Centre
-        </a>
-        
-        
+<div class="container">
+
+    <!-- LOGIN -->
+    <div id="loginBox">
+        <h2>Login</h2>
+        <form method="POST" action="{{ url_for('login') }}">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+
+        <div class="switch">
+            New user? <span onclick="showSignup()">Create account</span>
+        </div>
     </div>
+
+    <!-- SIGNUP -->
+    <div id="signupBox" class="signup">
+        <h2>Sign Up</h2>
+        <form method="POST" action="{{ url_for('signup') }}">
+            <input type="text" name="name" placeholder="Username" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Create Account</button>
+        </form>
+
+        <div class="switch">
+            Already have an account? <span onclick="showLogin()">Login</span>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function showSignup(){
+        document.getElementById("loginBox").style.display="none";
+        document.getElementById("signupBox").style.display="block";
+    }
+
+    function showLogin(){
+        document.getElementById("signupBox").style.display="none";
+        document.getElementById("loginBox").style.display="block";
+    }
+</script>
 
 </body>
 </html>
