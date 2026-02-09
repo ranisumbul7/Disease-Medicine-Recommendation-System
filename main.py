@@ -2,8 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for
 import numpy as np
 import pandas as pd
 import pickle
-
-
+import os
+import pickle
 
 app = Flask(__name__)
 
@@ -17,7 +17,10 @@ diets = pd.read_csv("dataset/diets.csv")
 
 
 # load model===========================================
-svc = pickle.load(open('model/svc.pkl','rb'))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "model", "svc.pkl")
+
+svc = pickle.load(open(MODEL_PATH, "rb"))
 
 
 
