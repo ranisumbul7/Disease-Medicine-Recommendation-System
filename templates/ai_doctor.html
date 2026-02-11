@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Doctor</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #e0f7fa, #ffffff);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.container {
+    background: white;
+    width: 400px;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+    text-align: center;
+    color: #00796b;
+}
+
+#chatbox {
+    height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    background-color: #f9f9f9;
+}
+
+#chatbox p {
+    margin: 8px 0;
+}
+
+input {
+    width: 70%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    outline: none;
+}
+
+button {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    margin-left: 5px;
+    font-weight: bold;
+}
+
+button:first-of-type {
+    background-color: #00796b;
+    color: white;
+}
+
+button:last-of-type {
+    background-color: #0288d1;
+    color: white;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+</style>
+
+</head>
+<body>
+
+<h2>🩺 AI Doctor (Free Version)</h2>
+
+<div id="chatbox"></div>
+
+<input type="text" id="userInput" placeholder="Describe your problem">
+<button onclick="sendMessage()">Send</button>
+<button onclick="startListening()"> Speak</button>
+
+<script>
+function sendMessage() {
+    let message = document.getElementById("userInput").value;
+
+    fetch("/ai-response", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({message: message})
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("chatbox").innerHTML += "<p><b>You:</b> " + message + "</p>";
+        document.getElementById("chatbox").innerHTML += "<p><b>Doctor:</b> " + data.reply + "</p>";
+
+        speak(data.reply);
+    });
+}
+
+function startListening() {
+    let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = "en-US";
+
+    recognition.onresult = function(event) {
+        let speechText = event.results[0][0].transcript;
+        document.getElementById("userInput").value = speechText;
+        sendMessage();
+    };
+
+    recognition.start();
+}
+
+function speak(text) {
+    let speech = new SpeechSynthesisUtterance(text);
+    speech.lang = "en-US";
+    window.speechSynthesis.speak(speech);
+}
+</script>
+
+</body>
+</html>
