@@ -1,5 +1,7 @@
 flask
 gunicorn
+flask-socketio
+eventlet
 numpy
 pandas
 scikit-learn

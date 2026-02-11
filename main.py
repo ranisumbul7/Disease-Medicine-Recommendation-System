@@ -1,7 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session
 import random
-from flask_socketio import SocketIO, send
-from google import genai
+from flask_socketio import SocketIO
 
 import numpy as np
 import pandas as pd
