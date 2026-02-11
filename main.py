@@ -77,7 +77,7 @@ def get_predicted_value(patient_symptoms):
     return diseases_list[pred_index]
 
 
-# ---------------- AI-DOCTOR ---------------- #
+# ---------------- AI-DOCTOR ------------------ #
 @app.route("/ai-doctor")
 def ai_doctor():
     return render_template("ai_doctor.html")
