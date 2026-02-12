@@ -4,85 +4,113 @@
     <title>AI Doctor</title>
 <style>
 body {
+    margin: 0;
     font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #e0f7fa, #ffffff);
+    background-color: #ece5dd;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
-    margin: 0;
 }
 
-.container {
-    background: white;
+/* Main chat box */
+.chat-container {
     width: 400px;
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-}
-
-h2 {
-    text-align: center;
-    color: #00796b;
-}
-
-#chatbox {
-    height: 300px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    padding: 10px;
+    height: 600px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
     border-radius: 10px;
-    margin-bottom: 15px;
-    background-color: #f9f9f9;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
-#chatbox p {
-    margin: 8px 0;
+/* Header */
+.chat-header {
+    background: #075e54;
+    color: white;
+    padding: 15px;
+    font-size: 18px;
+    font-weight: bold;
 }
 
-input {
-    width: 70%;
+/* Chat messages area */
+.chatbox {
+    flex: 1;
     padding: 10px;
-    border-radius: 8px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* User message */
+.user-message {
+    align-self: flex-end;
+    background: #dcf8c6;
+    padding: 8px 12px;
+    border-radius: 10px;
+    margin: 5px 0;
+    max-width: 70%;
+}
+
+/* Bot message */
+.bot-message {
+    align-self: flex-start;
+    background: #ffffff;
+    padding: 8px 12px;
+    border-radius: 10px;
+    margin: 5px 0;
+    max-width: 70%;
+    border: 1px solid #ddd;
+}
+
+/* Input area */
+.input-area {
+    display: flex;
+    padding: 10px;
+    background: #f0f0f0;
+}
+
+.input-area input {
+    flex: 1;
+    padding: 8px;
+    border-radius: 20px;
     border: 1px solid #ccc;
     outline: none;
 }
 
-button {
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
+.input-area button {
     margin-left: 5px;
-    font-weight: bold;
-}
-
-button:first-of-type {
-    background-color: #00796b;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 50%;
+    background: #25d366;
     color: white;
+    cursor: pointer;
 }
 
-button:last-of-type {
-    background-color: #0288d1;
-    color: white;
+.input-area button:hover {
+    opacity: 0.8;
 }
 
-button:hover {
-    opacity: 0.9;
-}
 </style>
 
 </head>
 <body>
 
-<h2>AI Doctor</h2>
+<div class="chat-container">
+    <div class="chat-header">
+        AI Doctor
+    </div>
 
-<div id="chatbox"></div>
+    <div id="chatbox" class="chatbox"></div>
 
-<input type="text" id="userInput" placeholder="Describe your problem">
-<button onclick="sendMessage()">Send</button>
-<button onclick="startListening()"> Speak</button>
-
+    <div class="input-area">
+        <input type="text" id="userInput" placeholder="Type your problem...">
+        <button onclick="sendMessage()">Send</button>
+        <button onclick="startListening()">speak</button>
+    </div>
+</div>
 <script>
 function sendMessage() {
     let message = document.getElementById("userInput").value;
