@@ -7,10 +7,14 @@ import pandas as pd
 import pickle
 import os
 import pickle
+import requests
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = "my_super_secret_key_123"   
-app.secret_key = "9326d13884e1f71ea4b52921445927b3"
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 
 # load databasedataset===================================
@@ -81,83 +85,28 @@ def get_predicted_value(patient_symptoms):
 def ai_doctor():
     return render_template("ai_doctor.html")
 
-@app.route("/ai-response", methods=["POST"])
-def ai_response():
-    user_input = request.json.get("message", "").lower()
+@app.route("/ask", methods=["POST"])
+def ask_ai():
+    user_input = request.json["message"]
 
-    greetings = ["hi", "hello", "hey"]
-    fever_keywords = ["fever", "temperature", "hot body"]
-    headache_keywords = ["headache", "head pain", "migraine"]
-    anxiety_keywords = ["anxiety", "stress", "tension"]
-    cough_keywords = ["cough", "cold", "throat pain"]
+    response = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": "openai/gpt-4o-mini",
+            "messages": [
+                {"role": "user", "content": user_input}
+            ]
+        }
+    )
 
-    # Greeting
-    if any(word in user_input for word in greetings):
-        reply = random.choice([
-            "Hello! I am your AI Doctor. How can I help you today?",
-            "Hi there! Please tell me your symptoms.",
-            "Hey! What health issue are you facing?"
-        ])
+    ai_response = response.json()
+    reply = ai_response["choices"][0]["message"]["content"]
 
-    # Fever
-    elif any(word in user_input for word in fever_keywords):
-        session["last_symptom"] = "fever"
-        reply = random.choice([
-            "It seems like you have fever. Since how many days?",
-            "Fever detected. Are you also feeling weakness?",
-            "Do you have body pain along with fever?"
-        ])
-
-    # Headache
-    elif any(word in user_input for word in headache_keywords):
-        session["last_symptom"] = "headache"
-        reply = random.choice([
-            "Headache can be due to stress or dehydration.",
-            "Are you getting enough sleep?",
-            "Is the pain mild or severe?"
-        ])
-
-    # Anxiety
-    elif any(word in user_input for word in anxiety_keywords):
-        session["last_symptom"] = "anxiety"
-        reply = random.choice([
-            "Try deep breathing exercises.",
-            "Avoid overthinking and take short breaks.",
-            "Do you feel anxious frequently?"
-        ])
-
-    # Cough / Cold
-    elif any(word in user_input for word in cough_keywords):
-        session["last_symptom"] = "cough"
-        reply = random.choice([
-            "Drink warm water and take steam.",
-            "Do you also have fever with cough?",
-            "Is it dry cough or with mucus?"
-        ])
-
-    # Follow-up handling
-    elif "yes" in user_input and "last_symptom" in session:
-        symptom = session["last_symptom"]
-
-        if symptom == "fever":
-            reply = "You should take paracetamol and consult a doctor if it lasts more than 3 days."
-        elif symptom == "headache":
-            reply = "Please rest in a quiet place and stay hydrated."
-        elif symptom == "anxiety":
-            reply = "Meditation and proper sleep can help reduce anxiety."
-        elif symptom == "cough":
-            reply = "If cough lasts more than a week, consult a physician."
-        else:
-            reply = "Please consult a nearby doctor for proper diagnosis."
-
-    else:
-        reply = random.choice([
-            "Please describe your symptoms clearly.",
-            "Can you explain your health issue in detail?",
-            "I am here to help. Tell me what you are feeling."
-        ])
-
-    return {"reply": reply}
+    return jsonify({"reply": reply})
 
 # creating routes========================================
 @app.route('/login', methods=['POST'])
