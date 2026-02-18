@@ -16,7 +16,7 @@
         <div class="container-fluid">
             <!-- Logo at the top-left corner -->
             <div class="logo">
-                <img class="myimg" src="{{ url_for('static', filename='healthcare-clinic.jpg') }}" alt="">
+                <img class="myimg" src="{{ url_for('static', filename='images/image.webp') }}" alt="">
             </div>
 
             <a class="navbar-brand" href="#">Health Center</a>
@@ -216,6 +216,11 @@
         </div>
     </div>
 
+<div class="container mt-3">
+    <button onclick="goBack()" class="btn-back">
+        ← Go Back
+    </button>
+</div>
 
 
        <script>
@@ -232,15 +237,19 @@ function startSpeechRecognition() {
     recognition.onresult = function (event) {
         const result = event.results[0][0].transcript;
 
-        // ✅ SHOW TEXT
         transcriptionDiv.textContent = result;
 
-        // ✅ VERY IMPORTANT: input box me daalo
         symptomsInput.value = result;
     };
 
     recognition.start();
 }
+
+// Back button functionality
+function goBack() {
+    window.history.back();
+}
+
 </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>

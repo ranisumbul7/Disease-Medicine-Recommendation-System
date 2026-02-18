@@ -116,6 +116,21 @@
             transform: scale(1.05);
         }
 
+
+        .btn-back {
+    background: linear-gradient(to right, #ff9966, #ff5e62);
+    border: none;
+    padding: 8px 20px;
+    border-radius: 25px;
+    color: white;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.btn-back:hover {
+    transform: scale(1.05);
+}
+
         /* Disclaimer */
         .disclaimer {
             text-align: center;
@@ -156,6 +171,13 @@
     Disclaimer: This AI provides general medical information only and is not a licensed doctor.
 </div>
 
+<div class="container mt-3">
+    <button onclick="goBack()" class="btn-back">
+        ← Go Back
+    </button>
+</div>
+
+
 <script>
 
     //  Start Voice
@@ -172,7 +194,7 @@
         recognition.interimResults = false;
 
         const voiceBtn = document.getElementById("voiceBtn");
-        voiceBtn.innerText = "Listening... 🎤";
+        voiceBtn.innerText = "Listening... ";
 
         recognition.start();
 
@@ -184,7 +206,7 @@
         };
 
         recognition.onend = function() {
-            voiceBtn.innerText = "🎙";
+            voiceBtn.innerText = "speak";
         };
     }
 
@@ -214,14 +236,14 @@
         .then(res => res.json())
         .then(data => {
 
-            // 🤖 AI Bubble
+            // AI Bubble
             const aiMsg = document.createElement("div");
             aiMsg.className = "message ai";
             aiMsg.innerText = data.reply;
             chat.appendChild(aiMsg);
             chat.scrollTop = chat.scrollHeight;
 
-            // 🔊 AI Voice Reply
+            // AI Voice Reply
             speakText(data.reply);
         });
     }
@@ -238,6 +260,10 @@
 
         window.speechSynthesis.speak(speech);
     }
+// Back button functionality
+function goBack() {
+    window.history.back();
+}
 
 </script>
 
