@@ -69,6 +69,22 @@
             box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
         }
 
+        #voiceBtn {
+    border: none;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    padding: 10px 14px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+#voiceBtn:hover {
+    transform: scale(1.1);
+}
+
+
         textarea {
             flex: 1;
             resize: none;
@@ -133,6 +149,7 @@
 <div class="input-area">
     <textarea id="userInput" rows="1" placeholder="Describe your symptoms..."></textarea>
     <button onclick="sendMessage()">Send</button>
+    <button onclick="startVoice()" id="voiceBtn" style="margin-right:10px;">🎙</button>
 </div>
 
 <div class="disclaimer">
@@ -140,14 +157,48 @@
 </div>
 
 <script>
+
+    //  Start Voice
+    function startVoice() {
+
+        if (!('webkitSpeechRecognition' in window)) {
+            alert("Use Google Chrome for voice feature.");
+            return;
+        }
+
+        const recognition = new webkitSpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        const voiceBtn = document.getElementById("voiceBtn");
+        voiceBtn.innerText = "Listening... 🎤";
+
+        recognition.start();
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            document.getElementById("userInput").value = transcript;
+
+            sendMessage();
+        };
+
+        recognition.onend = function() {
+            voiceBtn.innerText = "🎙";
+        };
+    }
+
+
+    //  Send Message
     function sendMessage() {
+
         const input = document.getElementById("userInput");
         const message = input.value.trim();
         if (!message) return;
 
         const chat = document.getElementById("chat");
 
-        // User message
+        // 👤 User Bubble
         const userMsg = document.createElement("div");
         userMsg.className = "message user";
         userMsg.innerText = message;
@@ -162,14 +213,34 @@
         })
         .then(res => res.json())
         .then(data => {
+
+            // 🤖 AI Bubble
             const aiMsg = document.createElement("div");
             aiMsg.className = "message ai";
             aiMsg.innerText = data.reply;
             chat.appendChild(aiMsg);
             chat.scrollTop = chat.scrollHeight;
+
+            // 🔊 AI Voice Reply
+            speakText(data.reply);
         });
     }
+
+
+    // Text To Speech
+    function speakText(text) {
+
+        const speech = new SpeechSynthesisUtterance();
+        speech.text = text;
+        speech.lang = "en-US";
+        speech.rate = 1;
+        speech.pitch = 1;
+
+        window.speechSynthesis.speak(speech);
+    }
+
 </script>
+
 
 </body>
 </html>
