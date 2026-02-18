@@ -87,26 +87,36 @@ def ai_doctor():
 
 @app.route("/ask", methods=["POST"])
 def ask_ai():
-    user_input = request.json["message"]
+    user_input = request.json.get("message", "")
+    prompt = f"""
+You are my personal AI doctor and medical assistant. 
+I am your patient. I will describe my symptoms or health issues, and you will respond in a friendly, professional, and caring doctor style. 
+Give clear, dynamic, and unique advice every time. 
+Ask follow-up questions only if needed to better understand my symptoms.
+Patient's input: {user_input}
+"""
 
-    response = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json"
-        },
-        json={
-            "model": "openai/gpt-4o-mini",
-            "messages": [
-                {"role": "user", "content": user_input}
-            ]
-        }
-    )
 
-    ai_response = response.json()
-    reply = ai_response["choices"][0]["message"]["content"]
+
+    try:
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "openrouter/free",   # Free model
+                "messages": [{"role": "user", "content": prompt}]
+            }
+        )
+        ai_response = response.json()
+        reply = ai_response["choices"][0]["message"]["content"]
+    except Exception as e:
+        reply = f"Error contacting AI: {str(e)}"
 
     return jsonify({"reply": reply})
+
 
 # creating routes========================================
 @app.route('/login', methods=['POST'])
