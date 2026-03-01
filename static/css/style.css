@@ -1,6 +1,6 @@
 /* ===== Animated Background Gradient ===== */
 body {
-    background: linear-gradient(-45deg, #00f2fe, #00f2fe, #0f2027, #203a43);
+    background: linear-gradient(-45deg, #00f2fe, #00f2fe, #17b2f5, #09f071);
     background-size: 400% 400%;
     animation: gradientBG 12s ease infinite;
     font-family: 'Segoe UI', sans-serif;

@@ -1,0 +1,83 @@
+body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            backdrop-filter: blur(15px);
+            background: rgba(0, 0, 0, 0.7) !important;
+        }
+
+        .main-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 45px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            color: white;
+            transition: 0.4s ease;
+        }
+
+        .main-card:hover {
+            transform: translateY(-8px);
+        }
+
+        .btn-custom {
+            padding: 14px;
+            font-weight: 600;
+            border-radius: 12px;
+            transition: 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0072ff, #00c6ff);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .ai-section {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .ai-card {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            display: inline-block;
+            transition: 0.4s ease;
+            max-width: 350px;
+        }
+
+        .ai-card:hover {
+            transform: scale(1.08);
+        }
+
+        .ai-btn {
+            display: inline-block;
+            padding: 12px 22px;
+            background: linear-gradient(135deg, #ff512f, #dd2476);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: bold;
+            transition: 0.3s ease;
+        }
+
+        .ai-btn:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        footer {
+            text-align: center;
+            padding: 15px;
+            color: white;
+            margin-top: auto;
+        }
