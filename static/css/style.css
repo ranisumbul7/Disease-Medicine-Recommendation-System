@@ -1,4 +1,6 @@
 /* ===== Root Variables ===== */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
 :root {
     --primary-start: #00f2fe;
     --primary-end: #4facfe;
@@ -7,9 +9,12 @@
     --voice-start: #ff4b2b;
     --voice-end: #ff416c;
     --backdrop: rgba(0,0,0,0.5);
-    --font-base: 'Segoe UI', sans-serif;
+    --font-base: 'Poppins', 'Segoe UI', sans-serif;
     --text-light: #fff;
     --text-dark: #000;
+    --hero-height: 60vh;
+    --shadow-light: rgba(0,0,0,0.1);
+    --shadow-dark: rgba(0,0,0,0.4);
 }
 
 /* ===== Global Box Sizing ===== */
@@ -61,6 +66,55 @@ body {
     background: var(--backdrop) !important;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     transition: background 0.4s ease;
+    padding: 0.7rem 1rem;
+}
+
+/* ===== Hero Section ===== */
+.hero {
+    height: var(--hero-height);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(135deg, var(--primary-start), var(--accent-start));
+    color: var(--text-light);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.25);
+}
+
+.hero h1 {
+    font-size: 3rem;
+    margin: 0;
+    z-index: 1;
+    animation: fadeInUp 1.5s ease;
+}
+
+.hero p {
+    font-size: 1.2rem;
+    margin-top: 0.5rem;
+    z-index: 1;
+    animation: fadeInUp 1.8s ease;
+}
+
+@keyframes fadeInUp {
+    from {opacity: 0; transform: translateY(20px);} 
+    to {opacity:1; transform: translateY(0);} 
+}
+
+/* adjust global button hover for smoother effect */
+button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 25px var(--shadow-dark);
 }
 
 .navbar.scrolled {
