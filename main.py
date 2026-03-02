@@ -1,20 +1,53 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash
+from werkzeug.security import generate_password_hash, check_password_hash
 import random
 from flask_socketio import SocketIO
 
+import sqlite3
 import numpy as np
 import pandas as pd
 import pickle
 import os
-import pickle
 import requests
-import os
 from dotenv import load_dotenv
+
+# helper decorator
+from functools import wraps
 
 load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'supersecret123')
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+
+# database initialization
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'users.db')
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute(
+        '''CREATE TABLE IF NOT EXISTS users (
+               id INTEGER PRIMARY KEY AUTOINCREMENT,
+               name TEXT NOT NULL,
+               email TEXT NOT NULL UNIQUE,
+               password TEXT NOT NULL
+           )'''
+    )
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# authentication decorator
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 # load databasedataset===================================
@@ -82,6 +115,7 @@ def get_predicted_value(patient_symptoms):
 
 # ---------------- AI-DOCTOR ------------------ #
 @app.route("/ai-doctor")
+@login_required
 def ai_doctor():
     return render_template("ai_doctor.html")
 
@@ -119,23 +153,71 @@ Patient's input: {user_input}
 
 
 # creating routes========================================
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    username = request.form.get('username')
-    password = request.form.get('password')
-
-    if username == "admin" and password == "123":
+    # already logged in
+    if 'user_id' in session:
         return redirect(url_for('dashboard'))
-    else:
-        return "Invalid credentials"
-    
-@app.route("/signup", methods=["POST"])
-def signup():
-    # signup logic
-    return redirect(url_for("front"))
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT id, password, name FROM users WHERE email=?", (email,))
+        row = c.fetchone()
+        conn.close()
+        if row and check_password_hash(row[1], password):
+            session['user_id'] = row[0]
+            session['user_name'] = row[2]
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid email or password', 'danger')
+            return redirect(url_for('login'))
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm = request.form.get('confirm')
+        if password != confirm:
+            flash('Passwords do not match', 'danger')
+            return redirect(url_for('register'))
+        hashed = generate_password_hash(password)
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            c = conn.cursor()
+            c.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
+                      (name, email, hashed))
+            conn.commit()
+            conn.close()
+            flash('Registration successful, please login', 'success')
+            return redirect(url_for('login'))
+        except sqlite3.IntegrityError:
+            flash('Email already registered', 'danger')
+            return redirect(url_for('register'))
+    return render_template('register.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('Logged out successfully', 'info')
+    return redirect(url_for('login'))
+
+@app.after_request
+def add_header(response):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 
 @app.route('/dashboard')
+@login_required
 def dashboard():
     return render_template('dashboard.html')
 
@@ -145,11 +227,13 @@ def front():
     return render_template("front.html")
 
 @app.route("/healthcare")
+@login_required
 def index():
     return render_template("index.html")
 
 # Define a route for the home page
 @app.route('/predict', methods=['GET', 'POST'])
+@login_required
 def home():
     if request.method == 'POST':
         symptoms = request.form.get('symptoms')
@@ -182,23 +266,27 @@ def home():
 
 # about view funtion and path
 @app.route('/about')
+@login_required
 def about():
     return render_template("about.html")
 # contact view funtion and path
 @app.route('/contact')
+@login_required
 def contact():
     return render_template("contact.html")
 
 # developer view funtion and path
 @app.route('/developer')
+@login_required
 def developer():
     return render_template("developer.html")
 
 # about view funtion and path
 @app.route('/blog')
+@login_required
 def blog():
     return render_template("blog.html")
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
