@@ -94,12 +94,16 @@ body{
 <span class="input-group-text"><i class="bi bi-envelope"></i></span>
 </div>
 <div class="input-group mb-3">
-<input type="password" name="password" class="form-control" placeholder="Password" required>
+<input type="password" name="password" id="password" class="form-control" placeholder="Password" required>
 <span class="input-group-text"><i class="bi bi-lock"></i></span>
 </div>
 <div class="input-group mb-3">
-<input type="password" name="confirm" class="form-control" placeholder="Confirm Password" required>
+<input type="password" name="confirm" id="confirm" class="form-control" placeholder="Confirm Password" required>
 <span class="input-group-text"><i class="bi bi-lock"></i></span>
+</div>
+<div class="form-check mb-3">
+<input class="form-check-input" type="checkbox" id="showPassword" onclick="togglePassword()">
+<label class="form-check-label text-light" for="showPassword">Show Passwords</label>
 </div>
 <button type="submit" class="btn-login w-100">Register</button>
 </form>
@@ -108,6 +112,15 @@ Already have an account? <a href="{{ url_for('login') }}" class="text-decoration
 </p>
 </div>
 </div>
+<script>
+function togglePassword() {
+    const pw = document.getElementById('password');
+    const conf = document.getElementById('confirm');
+    if(pw) pw.type = pw.type === 'password' ? 'text' : 'password';
+    if(conf) conf.type = conf.type === 'password' ? 'text' : 'password';
+}
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

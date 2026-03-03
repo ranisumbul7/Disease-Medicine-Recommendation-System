@@ -228,7 +228,8 @@ def dashboard():
 
 @app.route("/")
 def front():
-    return render_template("front.html")
+    # front page removed - redirect straight to login
+    return redirect(url_for('login'))
 
 @app.route("/healthcare")
 @login_required
