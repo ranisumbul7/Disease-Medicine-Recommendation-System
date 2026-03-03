@@ -151,11 +151,32 @@ Patient's input: {user_input}
 
 
 # creating routes========================================
-@app.route('/forgot-password')
+@app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
-    # simple placeholder for forgot password functionality
-    flash('Password reset is not implemented yet.', 'info')
-    return redirect(url_for('login'))
+    # simple password reset flow: user submits email + new password
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm = request.form.get('confirm')
+        if password != confirm:
+            flash('Passwords do not match', 'danger')
+            return redirect(url_for('forgot_password'))
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT id FROM users WHERE email=?", (email,))
+        row = c.fetchone()
+        if not row:
+            conn.close()
+            flash('Email not registered', 'danger')
+            return redirect(url_for('forgot_password'))
+        hashed = generate_password_hash(password)
+        c.execute("UPDATE users SET password=? WHERE email=?", (hashed, email))
+        conn.commit()
+        conn.close()
+        flash('Password updated successfully, please login', 'success')
+        return redirect(url_for('login'))
+    # GET request
+    return render_template('forgot_password.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
