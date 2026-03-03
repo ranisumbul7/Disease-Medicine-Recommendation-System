@@ -73,7 +73,7 @@ footer{
 
 <nav class="navbar navbar-dark px-4">
 <div class="container">
-<a class="navbar-brand fw-bold" href="/">🏥 Health Center</a>
+<a class="navbar-brand fw-bold" href="/"> Health Center</a>
 
 {% if session.get('user_id') %}
 <a class="btn btn-outline-light btn-sm ms-auto" href="{{ url_for('logout') }}">Logout</a>
@@ -84,7 +84,7 @@ footer{
 <div class="full-page-center">
 <div class="page-card" style="max-width:400px;">
 
-<h3 class="text-center mb-4 fw-bold">Welcome Back 👋</h3>
+<h3 class="text-center mb-4 fw-bold">Welcome Back </h3>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
