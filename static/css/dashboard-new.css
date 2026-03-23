@@ -1,0 +1,791 @@
+/* ============================================
+   DASHBOARD MAIN STYLING
+   ============================================ */
+
+:root {
+    --primary-color: #3b82f6;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --info-color: #06b6d4;
+    --light-bg: #f8fafc;
+    --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    --card-hover-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e0e9f8 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+}
+
+.dashboard-container {
+    padding-bottom: 40px;
+}
+
+/* ============================================
+   DASHBOARD HEADER
+   ============================================ */
+
+.dashboard-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 30px;
+}
+
+.dashboard-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.dashboard-header p {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.btn-group {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-group .btn-primary {
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-group .btn-primary:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #667eea;
+    border-color: white;
+}
+
+/* ============================================
+   STAT CARDS (Health Summary)
+   ============================================ */
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-left: 5px solid;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--card-hover-shadow);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.stat-card.total-predictions {
+    border-left-color: var(--primary-color);
+}
+
+.stat-card.total-predictions .stat-icon {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--primary-color);
+}
+
+.stat-card.last-disease {
+    border-left-color: var(--danger-color);
+}
+
+.stat-card.last-disease .stat-icon {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+}
+
+.stat-card.risk-level {
+    border-left-color: var(--warning-color);
+}
+
+.stat-card.risk-level .stat-icon {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+}
+
+.stat-card.last-check {
+    border-left-color: var(--success-color);
+}
+
+.stat-card.last-check .stat-icon {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    word-break: break-word;
+}
+
+.stat-footer {
+    font-size: 11px;
+    color: #cbd5e1;
+    margin-top: 3px;
+}
+
+/* ============================================
+   CHART CARDS
+   ============================================ */
+
+.chart-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
+}
+
+.chart-card:hover {
+    box-shadow: var(--card-hover-shadow);
+}
+
+.chart-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chart-title i {
+    color: var(--primary-color);
+    font-size: 18px;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+
+canvas {
+    max-height: 300px;
+}
+
+/* ============================================
+   ACTIVITY CARD & RECENT PREDICTIONS
+   ============================================ */
+
+.activity-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
+}
+
+.activity-card:hover {
+    box-shadow: var(--card-hover-shadow);
+}
+
+.activity-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.activity-title i {
+    color: var(--primary-color);
+}
+
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background-color: #f8fafc;
+    border-radius: 10px;
+    border-left: 3px solid var(--primary-color);
+    transition: all 0.3s ease;
+}
+
+.activity-item:hover {
+    background-color: #f1f5f9;
+    transform: translateX(5px);
+}
+
+.activity-icon {
+    font-size: 20px;
+    color: var(--success-color);
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-disease {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+
+.activity-date {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.activity-symptoms {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+    margin-bottom: 0;
+}
+
+.activity-badge {
+    display: flex;
+    align-items: center;
+}
+
+.badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* ============================================
+   SUGGESTIONS CARD
+   ============================================ */
+
+.suggestions-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.suggestions-card:hover {
+    box-shadow: var(--card-hover-shadow);
+}
+
+.suggestions-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.suggestions-title i {
+    color: var(--warning-color);
+    font-size: 18px;
+}
+
+.suggestions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.suggestion-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background-color: #f8fafc;
+    border-radius: 10px;
+    border-left: 3px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.suggestion-item:hover {
+    background-color: #f1f5f9;
+    transform: translateX(3px);
+}
+
+.suggestion-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.suggestion-icon.success {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+}
+
+.suggestion-icon.warning {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: var(--danger-color);
+    border: 2px solid rgba(239, 68, 68, 0.3);
+}
+
+.suggestion-icon.info {
+    background-color: rgba(6, 182, 212, 0.1);
+    color: var(--info-color);
+}
+
+.suggestion-content h6 {
+    font-size: 13px;
+    font-weight: 650;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+
+.suggestion-content p {
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 0;
+    line-height: 1.4;
+}
+
+/* ============================================
+   INSIGHT PRIORITY BADGES
+   ============================================ */
+
+.suggestion-item.high-priority {
+    border-left-color: var(--danger-color);
+    background-color: rgba(239, 68, 68, 0.05);
+}
+
+.suggestion-item.high-priority:hover {
+    background-color: rgba(239, 68, 68, 0.08);
+}
+
+.suggestion-item.medium-priority {
+    border-left-color: var(--warning-color);
+}
+
+.suggestion-item.low-priority {
+    border-left-color: var(--success-color);
+}
+
+/* ============================================
+   LAST PREDICTION CARD (PERSONALIZED)
+   ============================================ */
+
+.last-prediction-card {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    border: 2px solid rgba(102, 126, 234, 0.2);
+    border-radius: 12px;
+    padding: 24px;
+    transition: all 0.3s ease;
+}
+
+.last-prediction-card:hover {
+    border-color: rgba(102, 126, 234, 0.5);
+    box-shadow: var(--card-hover-shadow);
+}
+
+.prediction-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+}
+
+.prediction-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.prediction-title i {
+    color: #667eea;
+}
+
+.prediction-content {
+    padding: 10px;
+}
+
+.prediction-details {
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.prediction-disease {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.prediction-disease h3 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 0;
+}
+
+/* ============================================
+   HEALTH HISTORY TABLE
+   ============================================ */
+
+.history-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+
+.history-card:hover {
+    box-shadow: var(--card-hover-shadow);
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.history-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.history-title i {
+    color: #3b82f6;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.history-table thead {
+    background-color: #f8fafc;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.history-table thead th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+}
+
+.history-table tbody tr {
+    border-bottom: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.history-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.history-table tbody td {
+    padding: 14px 16px;
+    color: #475569;
+}
+
+.history-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.history-table strong {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.badge.bg-success {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+    color: var(--success-color) !important;
+}
+
+.badge.bg-warning {
+    background-color: rgba(245, 158, 11, 0.1) !important;
+    color: #d97706 !important;
+}
+
+.badge.bg-danger {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    color: var(--danger-color) !important;
+}
+
+/* ============================================
+   DASHBOARD PERSONALIZATION
+   ============================================ */
+
+.dashboard-header h1 i {
+    margin-right: 8px;
+}
+
+.dashboard-header strong {
+    color: #667eea;
+}
+
+/* ============================================
+   RESPONSIVE TABLE
+   ============================================ */
+
+@media (max-width: 768px) {
+    .prediction-disease h3 {
+        font-size: 22px;
+    }
+    
+    .history-table {
+        font-size: 12px;
+    }
+    
+    .history-table thead th,
+    .history-table tbody td {
+        padding: 10px 8px;
+    }
+}
+
+@media (max-width: 576px) {
+    .last-prediction-card {
+        padding: 16px;
+    }
+    
+    .prediction-disease {
+        padding: 16px;
+    }
+    
+    .prediction-disease h3 {
+        font-size: 20px;
+    }
+    
+    .history-table {
+        font-size: 11px;
+    }
+    
+    .history-table thead th,
+    .history-table tbody td {
+        padding: 8px 4px;
+    }
+}
+
+.quick-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    flex: 1;
+    min-width: 150px;
+    padding: 15px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    border: 2px solid;
+    cursor: pointer;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-hover-shadow);
+}
+
+.action-btn i {
+    font-size: 16px;
+}
+
+.ai-doctor-btn {
+    background-color: #667eea;
+    border-color: #667eea;
+    color: white;
+}
+
+.ai-doctor-btn:hover {
+    background-color: #5568d3;
+    border-color: #5568d3;
+    color: white;
+}
+
+.prediction-btn {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+    color: white;
+}
+
+.prediction-btn:hover {
+    background-color: #059669;
+    border-color: #059669;
+    color: white;
+}
+
+.contact-btn {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+    color: white;
+}
+
+.contact-btn:hover {
+    background-color: #dc2626;
+    border-color: #dc2626;
+    color: white;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        margin-bottom: 20px;
+    }
+
+    .dashboard-header h1 {
+        font-size: 22px;
+    }
+
+    .stat-card {
+        margin-bottom: 10px;
+    }
+
+    .stat-value {
+        font-size: 20px;
+    }
+
+    .chart-container {
+        height: 250px;
+    }
+
+    .activity-item,
+    .suggestion-item {
+        padding: 10px;
+    }
+
+    .action-btn {
+        min-width: 120px;
+        padding: 12px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 576px) {
+    .dashboard-header {
+        padding: 20px 15px !important;
+    }
+
+    .dashboard-header h1 {
+        font-size: 18px;
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+
+    .stat-value {
+        font-size: 18px;
+    }
+
+    .stat-label {
+        font-size: 11px;
+    }
+
+    .chart-title {
+        font-size: 14px;
+    }
+
+    .chart-container {
+        height: 220px;
+    }
+
+    .action-btn {
+        min-width: 100%;
+        margin-bottom: 10px;
+    }
+}

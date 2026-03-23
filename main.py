@@ -34,6 +34,17 @@ def init_db():
                password TEXT NOT NULL
            )'''
     )
+    c.execute(
+        '''CREATE TABLE IF NOT EXISTS predictions (
+               id INTEGER PRIMARY KEY AUTOINCREMENT,
+               user_id INTEGER NOT NULL,
+               disease TEXT NOT NULL,
+               symptoms TEXT NOT NULL,
+               date_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+               severity TEXT DEFAULT 'Medium',
+               FOREIGN KEY (user_id) REFERENCES users(id)
+           )'''
+    )
     conn.commit()
     conn.close()
 
@@ -109,6 +120,299 @@ def get_predicted_value(patient_symptoms):
 
     pred_index = svc.predict([input_vector])[0]
     return diseases_list[pred_index]
+
+def save_prediction(user_id, disease, symptoms):
+    """Save prediction to database"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute(
+            "INSERT INTO predictions (user_id, disease, symptoms) VALUES (?, ?, ?)",
+            (user_id, disease, symptoms)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Error saving prediction: {e}")
+        return False
+
+def get_user_predictions(user_id, limit=5):
+    """Get user's prediction history"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute(
+            "SELECT disease, symptoms, date_time FROM predictions WHERE user_id=? ORDER BY date_time DESC LIMIT ?",
+            (user_id, limit)
+        )
+        predictions = c.fetchall()
+        conn.close()
+        return predictions
+    except Exception as e:
+        print(f"Error fetching predictions: {e}")
+        return []
+
+def get_dashboard_stats(user_id):
+    """Get dashboard statistics"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        
+        # Total predictions count
+        c.execute("SELECT COUNT(*) FROM predictions WHERE user_id=?", (user_id,))
+        total_predictions = c.fetchone()[0]
+        
+        # Last disease detected
+        c.execute("SELECT disease FROM predictions WHERE user_id=? ORDER BY date_time DESC LIMIT 1", (user_id,))
+        last_disease = c.fetchone()
+        last_disease = last_disease[0] if last_disease else "None"
+        
+        # Last check date
+        c.execute("SELECT date_time FROM predictions WHERE user_id=? ORDER BY date_time DESC LIMIT 1", (user_id,))
+        last_check = c.fetchone()
+        last_check = last_check[0] if last_check else "Never"
+        
+        conn.close()
+
+        risk_level, risk_count = calculate_risk_level(user_id)
+        severity_score = calculate_severity_score(user_id)
+        
+        return {
+            'total_predictions': total_predictions,
+            'last_disease': last_disease,
+            'last_check': last_check,
+            'risk_level': risk_level,
+            'risk_count': risk_count,
+            'severity_score': severity_score
+        }
+    except Exception as e:
+        print(f"Error getting dashboard stats: {e}")
+        return {
+            'total_predictions': 0,
+            'last_disease': 'None',
+            'last_check': 'Never'
+        }
+
+def get_disease_frequency(user_id):
+    """Calculate disease frequency - for insights"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT disease FROM predictions WHERE user_id=?", (user_id,))
+        diseases = [row[0] for row in c.fetchall()]
+        conn.close()
+        
+        frequency = {}
+        for disease in diseases:
+            frequency[disease] = frequency.get(disease, 0) + 1
+        
+        return frequency
+    except Exception as e:
+        print(f"Error calculating disease frequency: {e}")
+        return {}
+
+def calculate_risk_level(user_id):
+    """Calculate risk level based on prediction frequency"""
+    try:
+        frequency = get_disease_frequency(user_id)
+        
+        if not frequency:
+            return "Low", 0
+        
+        # Get max frequency
+        max_count = max(frequency.values())
+        most_frequent = [k for k, v in frequency.items() if v == max_count][0]
+        
+        # Risk calculation logic
+        if max_count >= 3:
+            return "High", max_count
+        elif max_count == 2:
+            return "Medium", max_count
+        else:
+            return "Low", max_count
+    except Exception as e:
+        print(f"Error calculating risk: {e}")
+        return "Low", 0
+
+
+def calculate_severity_score(user_id):
+    """Calculate numeric severity score (0-100) based on risk and history"""
+    try:
+        stats = get_dashboard_stats(user_id)
+        total = stats.get('total_predictions', 0)
+        if total == 0:
+            return 0
+
+        risk_level, risk_count = calculate_risk_level(user_id)
+
+        # A simple severity score mapping:
+        # High risk => 80-100, Medium => 40-79, Low => 0-39 (scaled by frequency share)
+        base = 0
+        if risk_level == 'High':
+            base = 80
+        elif risk_level == 'Medium':
+            base = 50
+        else:
+            base = 25
+
+        # Add a proportional component based on the most frequent disease share
+        severity = base + int((risk_count / total) * 20)
+        return min(100, max(0, severity))
+    except Exception as e:
+        print(f"Error calculating severity score: {e}")
+        return 0
+
+
+def get_symptom_frequency(user_id):
+    """Calculate most frequent symptoms"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT symptoms FROM predictions WHERE user_id=?", (user_id,))
+        symptoms_list = [row[0] for row in c.fetchall()]
+        conn.close()
+        
+        symptom_count = {}
+        for symptoms_str in symptoms_list:
+            symptoms = [s.strip() for s in symptoms_str.split(',')]
+            for symptom in symptoms:
+                symptom_count[symptom] = symptom_count.get(symptom, 0) + 1
+        
+        # Return top 5 symptoms
+        sorted_symptoms = sorted(symptom_count.items(), key=lambda x: x[1], reverse=True)[:5]
+        return sorted_symptoms
+    except Exception as e:
+        print(f"Error calculating symptom frequency: {e}")
+        return []
+
+def get_health_trends(user_id, days=7):
+    """Get health trends for the last N days"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        
+        # Get predictions from last N days
+        c.execute(
+            "SELECT date_time, disease FROM predictions WHERE user_id=? ORDER BY date_time DESC LIMIT 30",
+            (user_id,)
+        )
+        predictions = c.fetchall()
+        conn.close()
+        
+        # Group by date
+        trend = {}
+        for date_time, disease in predictions:
+            date = date_time[:10] if date_time else "Unknown"
+            trend[date] = trend.get(date, 0) + 1
+        
+        # Sort by date
+        sorted_trend = sorted(trend.items())
+        return sorted_trend[-days:] if len(sorted_trend) > days else sorted_trend
+    except Exception as e:
+        print(f"Error getting trends: {e}")
+        return []
+
+def generate_ai_insights(user_id):
+    """Generate AI-powered health insights personalized to user"""
+    insights = []
+    
+    try:
+        # Get user name for personalization
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT name FROM users WHERE id=?", (user_id,))
+        user_row = c.fetchone()
+        user_name = user_row[0] if user_row else "User"
+        conn.close()
+        
+        # 1. Symptom-based insights
+        top_symptoms = get_symptom_frequency(user_id)
+        if top_symptoms:
+            primary_symptom = top_symptoms[0][0]
+            if 'fever' in primary_symptom.lower():
+                insights.append({
+                    'type': 'symptom',
+                    'icon': '🌡️',
+                    'title': 'Frequent Fever Alert',
+                    'message': f'{user_name}, you frequently report {primary_symptom.replace("_", " ")}. Stay hydrated and monitor your temperature regularly. Consult a doctor if fever persists.',
+                    'priority': 'high'
+                })
+            elif 'cough' in primary_symptom.lower():
+                insights.append({
+                    'type': 'symptom',
+                    'icon': '🫁',
+                    'title': 'Cough Monitoring',
+                    'message': f'Your health pattern shows frequent {primary_symptom.replace("_", " ")}. Try steam inhalation and honey-based remedies. Track duration.',
+                    'priority': 'medium'
+                })
+            elif 'headache' in primary_symptom.lower():
+                insights.append({
+                    'type': 'symptom',
+                    'icon': '🧠',
+                    'title': 'Recurring Headaches',
+                    'message': f'You experience {primary_symptom.replace("_", " ")} frequently. Ensure 7-8 hours sleep, stay hydrated, and reduce screen time.',
+                    'priority': 'medium'
+                })
+        
+        # 2. Disease frequency insights
+        disease_freq = get_disease_frequency(user_id)
+        if disease_freq:
+            most_common_disease = max(disease_freq, key=disease_freq.get)
+            count = disease_freq[most_common_disease]
+            
+            if count >= 2:
+                insights.append({
+                    'type': 'disease',
+                    'icon': '⚕️',
+                    'title': f'Recurring {most_common_disease}',
+                    'message': f'Your records show {most_common_disease} has appeared {count} times. We recommend scheduling a doctor\'s appointment for proper diagnosis.',
+                    'priority': 'high' if count >= 3 else 'medium'
+                })
+        
+        # 3. Risk-based insights
+        risk_level, risk_count = calculate_risk_level(user_id)
+        if risk_level == "High":
+            insights.append({
+                'type': 'risk',
+                'icon': '⚠️',
+                'title': 'High Health Risk Alert',
+                'message': f'{user_name}, your health patterns show elevated risk. Schedule a comprehensive health checkup with your doctor immediately.',
+                'priority': 'high'
+            })
+        elif risk_level == "Medium":
+            insights.append({
+                'type': 'risk',
+                'icon': '📋',
+                'title': 'Monitor Your Health',
+                'message': f'You\'ve had {risk_count} predictions recently. Keep track of patterns and consult a doctor if symptoms persist.',
+                'priority': 'medium'
+            })
+        
+        # 4. General wellness insights based on activity
+        total = len(disease_freq)
+        if total > 0:
+            insights.append({
+                'type': 'wellness',
+                'icon': '💪',
+                'title': 'Boost Your Immunity',
+                'message': 'Regular exercise (30 mins daily), balanced nutrition, and 7-8 hours of quality sleep strengthen your immune system.',
+                'priority': 'low'
+            })
+        
+            insights.append({
+                'type': 'wellness',
+                'icon': '💧',
+                'title': 'Stay Hydrated',
+                'message': 'Drink 8-10 glasses of water daily. Proper hydration supports immune function and helps prevent many illnesses.',
+                'priority': 'low'
+            })
+        
+        return insights[:4]  # Return top 4 insights
+    
+    except Exception as e:
+        print(f"Error generating insights: {e}")
+        return []
 
 
 # ---------------- AI-DOCTOR ------------------ #
@@ -244,7 +548,81 @@ def add_header(response):
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('dashboard.html')
+    stats = get_dashboard_stats(session['user_id'])
+    predictions = get_user_predictions(session['user_id'], 5)
+    return render_template('dashboard.html', stats=stats, predictions=predictions)
+
+@app.route('/api/dashboard-stats')
+@login_required
+def api_dashboard_stats():
+    """API endpoint for dashboard data with personalized user insights"""
+    stats = get_dashboard_stats(session['user_id'])
+    predictions = get_user_predictions(session['user_id'], 10)
+    all_predictions = get_user_predictions(session['user_id'], 100)  # Get full history
+    risk_level, risk_count = calculate_risk_level(session['user_id'])
+    disease_frequency = get_disease_frequency(session['user_id'])
+    trends = get_health_trends(session['user_id'], 7)
+    ai_insights = generate_ai_insights(session['user_id'])
+    
+    # Get last prediction details
+    last_prediction = None
+    if predictions:
+        disease, symptoms, date_time = predictions[0]
+        last_prediction = {
+            'disease': disease,
+            'symptoms': symptoms,
+            'date_time': date_time,
+            'severity': 'Medium'  # Default, can be calculated if needed
+        }
+    
+    # Format predictions for chart
+    prediction_list = []
+    for idx, (disease, symptoms, date_time) in enumerate(predictions):
+        prediction_list.append({
+            'date': date_time[:10] if date_time else 'Unknown',
+            'disease': disease,
+            'symptoms_count': len(symptoms.split(',')),
+            'index': idx + 1
+        })
+    
+    # Format all predictions for history table
+    history_list = []
+    for disease, symptoms, date_time in all_predictions:
+        history_list.append({
+            'disease': disease,
+            'symptoms': symptoms,
+            'date_time': date_time,
+            'severity': 'Medium'  # Can be enhanced
+        })
+    
+    # Format trends
+    trend_data = []
+    for date, count in trends:
+        trend_data.append({'date': date, 'count': count})
+    
+    # Format disease frequency for pie chart
+    disease_data = []
+    for disease, count in sorted(disease_frequency.items(), key=lambda x: x[1], reverse=True)[:6]:
+        disease_data.append({'disease': disease, 'count': count})
+    
+    return jsonify({
+        'total_predictions': stats['total_predictions'],
+        'last_disease': stats['last_disease'],
+        'last_check': stats['last_check'],
+        'last_prediction': last_prediction,
+        'recent_predictions': prediction_list,
+        'all_predictions': history_list,
+        'risk_level': risk_level,
+        'risk_count': risk_count,
+        'severity_score': calculate_severity_score(session['user_id']),
+        'disease_frequency': disease_data,
+        'trends': trend_data,
+        'ai_insights': ai_insights,
+        'top_symptoms': [
+            {'symptom': s[0].replace('_', ' ').title(), 'count': s[1]} 
+            for s in get_symptom_frequency(session['user_id'])
+        ]
+    })
 
 
 @app.route("/")
@@ -263,14 +641,11 @@ def index():
 def home():
     if request.method == 'POST':
         symptoms = request.form.get('symptoms')
-        # mysysms = request.form.get('mysysms')
-        # print(mysysms)
         print(symptoms)
         if symptoms =="Symptoms":
             message = "Please either write symptoms or you have written misspelled symptoms"
             return render_template('index.html', message=message)
         else:
-
             # Split the user's input into a list of symptoms (assuming they are comma-separated)
             user_symptoms = [s.strip() for s in symptoms.split(',')]
             # Remove any extra characters, if any
@@ -281,6 +656,9 @@ def home():
             my_precautions = []
             for i in precautions[0]:
                 my_precautions.append(i)
+
+            # Save prediction to database
+            save_prediction(session['user_id'], predicted_disease, symptoms)
 
             return render_template('index.html', predicted_disease=predicted_disease, dis_des=dis_des,
                                    my_precautions=my_precautions, medications=medications, my_diet=rec_diet,
