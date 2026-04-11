@@ -10,6 +10,7 @@ import pickle
 import os
 import requests
 from dotenv import load_dotenv
+import logging
 
 # helper decorator
 from functools import wraps
@@ -19,6 +20,9 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'supersecret123')
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+
+# logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 
 # database initialization
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'users.db')
@@ -45,6 +49,17 @@ def init_db():
                FOREIGN KEY (user_id) REFERENCES users(id)
            )'''
     )
+    # Reports table for patient history / past reports
+    c.execute(
+        '''CREATE TABLE IF NOT EXISTS reports (
+               id INTEGER PRIMARY KEY AUTOINCREMENT,
+               userId INTEGER NOT NULL,
+               disease TEXT NOT NULL,
+               severity TEXT DEFAULT 'Medium',
+               date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+               FOREIGN KEY (userId) REFERENCES users(id)
+           )'''
+    )
     conn.commit()
     conn.close()
 
@@ -62,19 +77,33 @@ def login_required(f):
 
 
 # load databasedataset
-sym_des = pd.read_csv("dataset/symtoms_df.csv")
-precautions = pd.read_csv("dataset/precautions_df.csv")
-workout = pd.read_csv("dataset/workout_df.csv")
-description = pd.read_csv("dataset/description.csv")
-medications = pd.read_csv('dataset/medications.csv')
-diets = pd.read_csv("dataset/diets.csv")
+def safe_read_csv(path, **kwargs):
+    try:
+        return pd.read_csv(path, **kwargs)
+    except Exception as e:
+        logging.warning(f"Failed to read {path}: {e}")
+        return pd.DataFrame()
+
+sym_des = safe_read_csv("dataset/symtoms_df.csv")
+precautions = safe_read_csv("dataset/precautions_df.csv")
+workout = safe_read_csv("dataset/workout_df.csv")
+description = safe_read_csv("dataset/description.csv")
+medications = safe_read_csv('dataset/medications.csv')
+diets = safe_read_csv("dataset/diets.csv")
 
 
 # load model..........................................................
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "model", "svc.pkl")
 
-svc = pickle.load(open(MODEL_PATH, "rb"))
+svc = None
+try:
+    with open(MODEL_PATH, "rb") as f:
+        svc = pickle.load(f)
+    logging.info(f"Loaded model from {MODEL_PATH}")
+except Exception as e:
+    logging.error(f"Failed to load model {MODEL_PATH}: {e}")
+    svc = None
 
 
 
@@ -118,18 +147,50 @@ def get_predicted_value(patient_symptoms):
     if np.sum(input_vector) == 0:
         return "No valid symptoms found"
 
-    pred_index = svc.predict([input_vector])[0]
-    return diseases_list[pred_index]
+    # Ensure model is loaded
+    if svc is None:
+        logging.error("Prediction requested but model is not loaded")
+        return "Model not available"
+
+    try:
+        pred_index = svc.predict([input_vector])[0]
+        return diseases_list.get(pred_index, "Unknown disease")
+    except Exception as e:
+        logging.error(f"Prediction failed: {e}")
+        return "Prediction error"
 
 def save_prediction(user_id, disease, symptoms):
     """Save prediction to database"""
     try:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
+        # Compute a simple severity label from severity score (0-100)
+        try:
+            score = calculate_severity_score(user_id)
+        except Exception:
+            score = None
+
+        if score is None:
+            severity_label = 'Medium'
+        elif score >= 80:
+            severity_label = 'High'
+        elif score >= 40:
+            severity_label = 'Medium'
+        else:
+            severity_label = 'Low'
+
+        # Insert into legacy predictions table (keeps existing behavior)
         c.execute(
-            "INSERT INTO predictions (user_id, disease, symptoms) VALUES (?, ?, ?)",
-            (user_id, disease, symptoms)
+            "INSERT INTO predictions (user_id, disease, symptoms, severity) VALUES (?, ?, ?, ?)",
+            (user_id, disease, symptoms, severity_label)
         )
+
+        # Also insert a concise record into the new reports table
+        c.execute(
+            "INSERT INTO reports (userId, disease, severity) VALUES (?, ?, ?)",
+            (user_id, disease, severity_label)
+        )
+
         conn.commit()
         conn.close()
         return True
@@ -151,6 +212,23 @@ def get_user_predictions(user_id, limit=5):
         return predictions
     except Exception as e:
         print(f"Error fetching predictions: {e}")
+        return []
+
+
+def get_reports(user_id, limit=None):
+    """Return reports for a user from the reports table, latest first"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        if limit:
+            c.execute("SELECT disease, severity, date FROM reports WHERE userId=? ORDER BY date DESC LIMIT ?", (user_id, limit))
+        else:
+            c.execute("SELECT disease, severity, date FROM reports WHERE userId=? ORDER BY date DESC", (user_id,))
+        rows = c.fetchall()
+        conn.close()
+        return rows
+    except Exception as e:
+        print(f"Error fetching reports: {e}")
         return []
 
 def get_dashboard_stats(user_id):
@@ -175,8 +253,17 @@ def get_dashboard_stats(user_id):
         
         conn.close()
 
-        risk_level, risk_count = calculate_risk_level(user_id)
-        severity_score = calculate_severity_score(user_id)
+        # Calculate risk level with frequency (avoid redundant calls)
+        frequency = get_disease_frequency(user_id)
+        risk_level, risk_count = calculate_risk_level(user_id, frequency)
+        
+        # Pass pre-computed values to avoid recursion
+        severity_score = calculate_severity_score(
+            user_id, 
+            total_predictions=total_predictions,
+            risk_level=risk_level,
+            risk_count=risk_count
+        )
         
         return {
             'total_predictions': total_predictions,
@@ -191,7 +278,10 @@ def get_dashboard_stats(user_id):
         return {
             'total_predictions': 0,
             'last_disease': 'None',
-            'last_check': 'Never'
+            'last_check': 'Never',
+            'risk_level': 'Low',
+            'risk_count': 0,
+            'severity_score': 0
         }
 
 def get_disease_frequency(user_id):
@@ -212,17 +302,23 @@ def get_disease_frequency(user_id):
         print(f"Error calculating disease frequency: {e}")
         return {}
 
-def calculate_risk_level(user_id):
-    """Calculate risk level based on prediction frequency"""
+def calculate_risk_level(user_id, frequency=None):
+    """Calculate risk level based on prediction frequency
+    
+    Args:
+        user_id: The user ID
+        frequency: Optional pre-computed frequency dict to avoid redundant calls
+    """
     try:
-        frequency = get_disease_frequency(user_id)
+        # Use provided frequency or calculate it
+        if frequency is None:
+            frequency = get_disease_frequency(user_id)
         
         if not frequency:
             return "Low", 0
         
         # Get max frequency
         max_count = max(frequency.values())
-        most_frequent = [k for k, v in frequency.items() if v == max_count][0]
         
         # Risk calculation logic
         if max_count >= 3:
@@ -236,17 +332,33 @@ def calculate_risk_level(user_id):
         return "Low", 0
 
 
-def calculate_severity_score(user_id):
-    """Calculate numeric severity score (0-100) based on risk and history"""
+def calculate_severity_score(user_id, total_predictions=None, risk_level=None, risk_count=None):
+    """Calculate numeric severity score (0-100) based on risk and history
+    
+    Args:
+        user_id: The user ID
+        total_predictions: Optional pre-computed total (avoids redundant DB call)
+        risk_level: Optional pre-computed risk level
+        risk_count: Optional pre-computed risk count
+    """
     try:
-        stats = get_dashboard_stats(user_id)
-        total = stats.get('total_predictions', 0)
-        if total == 0:
+        # Avoid recursion: Get total from DB only if not provided
+        if total_predictions is None:
+            conn = sqlite3.connect(DB_PATH)
+            c = conn.cursor()
+            c.execute("SELECT COUNT(*) FROM predictions WHERE user_id=?", (user_id,))
+            total_predictions = c.fetchone()[0]
+            conn.close()
+        
+        if total_predictions == 0:
             return 0
 
-        risk_level, risk_count = calculate_risk_level(user_id)
+        # Use provided risk info or calculate it
+        if risk_level is None or risk_count is None:
+            frequency = get_disease_frequency(user_id)
+            risk_level, risk_count = calculate_risk_level(user_id, frequency)
 
-        # A simple severity score mapping:
+        # Severity score mapping:
         # High risk => 80-100, Medium => 40-79, Low => 0-39 (scaled by frequency share)
         base = 0
         if risk_level == 'High':
@@ -257,7 +369,7 @@ def calculate_severity_score(user_id):
             base = 25
 
         # Add a proportional component based on the most frequent disease share
-        severity = base + int((risk_count / total) * 20)
+        severity = base + int((risk_count / total_predictions) * 20)
         return min(100, max(0, severity))
     except Exception as e:
         print(f"Error calculating severity score: {e}")
@@ -550,79 +662,112 @@ def add_header(response):
 def dashboard():
     stats = get_dashboard_stats(session['user_id'])
     predictions = get_user_predictions(session['user_id'], 5)
-    return render_template('dashboard.html', stats=stats, predictions=predictions)
+    return render_template('dashboard.html', stats=stats, predictions=predictions, user_id=session['user_id'])
 
 @app.route('/api/dashboard-stats')
 @login_required
 def api_dashboard_stats():
-    """API endpoint for dashboard data with personalized user insights"""
-    stats = get_dashboard_stats(session['user_id'])
-    predictions = get_user_predictions(session['user_id'], 10)
-    all_predictions = get_user_predictions(session['user_id'], 100)  # Get full history
-    risk_level, risk_count = calculate_risk_level(session['user_id'])
-    disease_frequency = get_disease_frequency(session['user_id'])
-    trends = get_health_trends(session['user_id'], 7)
-    ai_insights = generate_ai_insights(session['user_id'])
+    """API endpoint for dashboard data with personalized user insights
     
-    # Get last prediction details
-    last_prediction = None
-    if predictions:
-        disease, symptoms, date_time = predictions[0]
-        last_prediction = {
-            'disease': disease,
-            'symptoms': symptoms,
-            'date_time': date_time,
-            'severity': 'Medium'  # Default, can be calculated if needed
-        }
-    
-    # Format predictions for chart
-    prediction_list = []
-    for idx, (disease, symptoms, date_time) in enumerate(predictions):
-        prediction_list.append({
-            'date': date_time[:10] if date_time else 'Unknown',
-            'disease': disease,
-            'symptoms_count': len(symptoms.split(',')),
-            'index': idx + 1
-        })
-    
-    # Format all predictions for history table
-    history_list = []
-    for disease, symptoms, date_time in all_predictions:
-        history_list.append({
-            'disease': disease,
-            'symptoms': symptoms,
-            'date_time': date_time,
-            'severity': 'Medium'  # Can be enhanced
-        })
-    
-    # Format trends
-    trend_data = []
-    for date, count in trends:
-        trend_data.append({'date': date, 'count': count})
-    
-    # Format disease frequency for pie chart
-    disease_data = []
-    for disease, count in sorted(disease_frequency.items(), key=lambda x: x[1], reverse=True)[:6]:
-        disease_data.append({'disease': disease, 'count': count})
-    
-    return jsonify({
-        'total_predictions': stats['total_predictions'],
-        'last_disease': stats['last_disease'],
-        'last_check': stats['last_check'],
-        'last_prediction': last_prediction,
-        'recent_predictions': prediction_list,
-        'all_predictions': history_list,
-        'risk_level': risk_level,
-        'risk_count': risk_count,
-        'severity_score': calculate_severity_score(session['user_id']),
-        'disease_frequency': disease_data,
-        'trends': trend_data,
-        'ai_insights': ai_insights,
-        'top_symptoms': [
+    Optimized to avoid redundant function calls and recursion.
+    """
+    try:
+        user_id = session['user_id']
+        
+        # Get all data in one pass - Avoid redundant calls
+        stats = get_dashboard_stats(user_id)  # This now internally handles everything without recursion
+        predictions = get_user_predictions(user_id, 10)
+        all_predictions = get_user_predictions(user_id, 100)  # Get full history
+        disease_frequency = get_disease_frequency(user_id)
+        trends = get_health_trends(user_id, 7)
+        ai_insights = generate_ai_insights(user_id)
+        top_symptoms = get_symptom_frequency(user_id)
+        
+        # Reuse stats instead of recalculating
+        risk_level = stats.get('risk_level', 'Low')
+        risk_count = stats.get('risk_count', 0)
+        severity_score = stats.get('severity_score', 0)
+        
+        # Get last prediction details
+        last_prediction = None
+        if predictions:
+            disease, symptoms, date_time = predictions[0]
+            last_prediction = {
+                'disease': disease,
+                'symptoms': symptoms,
+                'date_time': date_time,
+                'severity': 'Medium'  # Default, can be calculated if needed
+            }
+        
+        # Format predictions for chart
+        prediction_list = []
+        for idx, (disease, symptoms, date_time) in enumerate(predictions):
+            prediction_list.append({
+                'date': date_time[:10] if date_time else 'Unknown',
+                'disease': disease,
+                'symptoms_count': len(symptoms.split(',')),
+                'index': idx + 1
+            })
+        
+        # Format all predictions for history table
+        history_list = []
+        for disease, symptoms, date_time in all_predictions:
+            history_list.append({
+                'disease': disease,
+                'symptoms': symptoms,
+                'date_time': date_time,
+                'severity': 'Medium'  # Can be enhanced
+            })
+        
+        # Format trends
+        trend_data = []
+        for date, count in trends:
+            trend_data.append({'date': date, 'count': count})
+        
+        # Format disease frequency for pie chart
+        disease_data = []
+        for disease, count in sorted(disease_frequency.items(), key=lambda x: x[1], reverse=True)[:6]:
+            disease_data.append({'disease': disease, 'count': count})
+        
+        # Format top symptoms
+        symptoms_data = [
             {'symptom': s[0].replace('_', ' ').title(), 'count': s[1]} 
-            for s in get_symptom_frequency(session['user_id'])
+            for s in top_symptoms
         ]
-    })
+        
+        response = {
+            'total_predictions': stats['total_predictions'],
+            'last_disease': stats['last_disease'],
+            'last_check': stats['last_check'],
+            'last_prediction': last_prediction,
+            'recent_predictions': prediction_list,
+            'all_predictions': history_list,
+            'risk_level': risk_level,
+            'risk_count': risk_count,
+            'severity_score': severity_score,
+            'disease_frequency': disease_data,
+            'trends': trend_data,
+            'ai_insights': ai_insights,
+            'top_symptoms': symptoms_data
+        }
+        
+        return jsonify(response)
+    
+    except RecursionError as e:
+        print(f"Recursion error in dashboard stats: {e}")
+        return jsonify({
+            'error': 'Recursion error',
+            'message': 'Failed to calculate dashboard stats due to recursion',
+            'total_predictions': 0
+        }), 500
+    
+    except Exception as e:
+        print(f"Error in api_dashboard_stats: {e}")
+        return jsonify({
+            'error': str(type(e).__name__),
+            'message': str(e),
+            'total_predictions': 0
+        }), 500
 
 
 @app.route("/")
@@ -630,10 +775,44 @@ def front():
     # front page removed - redirect straight to login
     return redirect(url_for('login'))
 
+
+@app.route('/health')
+def health_check():
+    """Health-check endpoint for readiness checks."""
+    status = {
+        'status': 'ok',
+        'model_loaded': svc is not None,
+        'datasets_loaded': bool(not description.empty and not precautions.empty)
+    }
+    return jsonify(status)
+
 @app.route("/healthcare")
 @login_required
 def index():
     return render_template("index.html")
+
+
+@app.route('/api/history/<int:userId>', methods=['GET'])
+@login_required
+def api_history(userId):
+    """Return user's past reports (latest first). Requires authenticated user.
+
+    Only the logged-in user may fetch their own history.
+    """
+    try:
+        # Ensure users can only fetch their own history
+        if session.get('user_id') != userId:
+            return jsonify({'error': 'forbidden'}), 403
+
+        rows = get_reports(userId)
+        reports = []
+        for disease, severity, date in rows:
+            reports.append({'disease': disease, 'severity': severity, 'date': date})
+
+        return jsonify({'reports': reports})
+    except Exception as e:
+        print(f"Error in api_history: {e}")
+        return jsonify({'error': 'internal_error', 'message': str(e)}), 500
 
 # Define a route for the home page
 @app.route('/predict', methods=['GET', 'POST'])

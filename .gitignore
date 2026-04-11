@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.env
+.env.*
+
+# Jupyter
+.ipynb_checkpoints
+
+# SQLite DB
+users.db
+
+# Model files (if you don't want to store heavy binaries in repo)
+model/*.pkl
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
