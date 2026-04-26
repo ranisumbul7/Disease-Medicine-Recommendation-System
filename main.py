@@ -848,6 +848,10 @@ def home():
 
 
 # about view funtion and path
+@app.route('/disease/<name>')
+def disease_detail(name):
+    return f"Details for {name}"
+
 @app.route('/about')
 @login_required
 def about():

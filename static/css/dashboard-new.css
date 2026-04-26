@@ -202,6 +202,19 @@ canvas {
     max-height: 300px;
 }
 
+
+/* Make both cards equal height */
+.chart-card, 
+.suggestions-card {
+    height: 100%;
+}
+
+/* Optional: scroll inside AI insights */
+.suggestions-list {
+    max-height: 280px;
+    overflow-y: auto;
+}
+
 /* ============================================
    ACTIVITY CARD & RECENT PREDICTIONS
    ============================================ */

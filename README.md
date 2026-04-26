@@ -72,3 +72,10 @@ There is a simple health endpoint at `/health` which returns JSON about model an
 
 This project is provided as-is.
 
+## Refactor notes (for presentation)
+
+- Project reorganized into `app/` package with `db.py`, `model.py`, and `routes.py` for clarity.
+- Use `python scripts/train_model.py` to create a demo model and `model/svc_meta.json` with metadata.
+- Configure secrets in `.env` (see `.env.example`). Debug is disabled by default; use only for development.
+
+

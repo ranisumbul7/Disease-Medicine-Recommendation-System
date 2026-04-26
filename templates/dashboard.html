@@ -24,17 +24,13 @@
                         <span id="lastUpdateTime" class="ms-2"></span>
                     </p>
                 </div>
-                <div class="btn-group">
-                    <a href="/healthcare" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> New Prediction
-                    </a>
-                </div>
+        
             </div>
         </div>
     </div>
 
     <div class="container-fluid px-4 py-4">
-        <!-- 🟢 HEALTH SUMMARY CARDS -->
+        <!--  HEALTH SUMMARY CARDS -->
         <div class="row mb-4">
             <div class="col-lg-3 col-md-6 mb-3">
                 <div class="stat-card total-predictions">
@@ -134,6 +130,7 @@
                 </div>
             </div>
 
+            <!-- SYMPTOM FREQUENCY CHART -->
             <div class="col-lg-6 mb-3">
                 <div class="chart-card">
                     <h5 class="chart-title">
@@ -146,78 +143,13 @@
             </div>
         </div>
 
-        <!-- 📈 HEALTH TRENDS -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="chart-card">
-                    <h5 class="chart-title">
-                        <i class="bi bi-graph-up"></i> 7-Day Health Trends
-                    </h5>
-                    <div class="chart-container" style="height: 280px;">
-                        <canvas id="trendChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 🔵 RECENT ACTIVITY -->
-        <div class="row mb-4">
-            <div class="col-lg-8">
-                <div class="activity-card">
-                    <h5 class="activity-title">
-                        <i class="bi bi-clock-history"></i> Recent Predictions
-                    </h5>
-                    <div class="activity-list">
-                        {% if predictions %}
-                            {% for disease, symptoms, date_time in predictions %}
-                            <div class="activity-item">
-                                <div class="activity-icon">
-                                    <i class="bi bi-check-circle-fill"></i>
-                                </div>
-                                <div class="activity-content">
-                                    <h6 class="activity-disease">{{ disease }}</h6>
-                                    <small class="activity-date">{{ date_time[:16] }}</small>
-                                    <p class="activity-symptoms">Symptoms: {{ symptoms[:50] }}{% if symptoms|length > 50 %}...{% endif %}</p>
-                                </div>
-                                <div class="activity-badge">
-                                    <span class="badge bg-warning text-dark">Medium</span>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="text-center py-5">
-                                <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
-                                <p class="text-muted mt-3">No predictions yet. Start your first diagnosis!</p>
-                                <a href="/healthcare" class="btn btn-primary btn-sm">Make Prediction</a>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- 🟣 AI SUGGESTIONS -->
-            <div class="col-lg-4">
-                <div class="suggestions-card">
-                    <h5 class="suggestions-title">
-                        <i class="bi bi-lightbulb"></i> AI Health Insights
-                    </h5>
-                    <div class="suggestions-list" id="insightsList">
-                        <div class="text-center py-5">
-                            <small class="text-muted">Loading insights...</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <!-- Past Reports (React) -->
+      <!-- Past Reports (React) -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="history-card">
                     <div class="history-header d-flex justify-content-between align-items-center">
                         <h5 class="history-title mb-0">
-                            <i class="bi bi-journal-medical"></i> Past Reports
+                            <i class="bi bi-journal-medical"></i> Recent Past Reports
                         </h5>
                         <small class="text-muted">Showing latest 5</small>
                     </div>
@@ -226,6 +158,37 @@
             </div>
         </div>
 
+        <!-- 📈 HEALTH TRENDS + AI INSIGHTS -->
+<div class="row mb-4">
+
+    <!-- LEFT: 7-Day Trends -->
+    <div class="col-lg-8 mb-3">
+        <div class="chart-card">
+            <h5 class="chart-title">
+                <i class="bi bi-graph-up"></i> 7-Day Health Trends
+            </h5>
+            <div class="chart-container" style="height: 280px;">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT: AI Insights -->
+    <div class="col-lg-4">
+        <div class="suggestions-card">
+            <h5 class="suggestions-title">
+                <i class="bi bi-lightbulb"></i> AI Health Insights
+            </h5>
+            <div class="suggestions-list" id="insightsList">
+                <div class="text-center py-5">
+                    <small class="text-muted">Loading insights...</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+        <!-- QUICK ACTIONS -->
         <div class="row">
             <div class="col-12">
                 <div class="quick-actions">
@@ -503,27 +466,41 @@
                     borderWidth: 2
                 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            font: { size: 11 },
-                            padding: 15,
-                            usePointStyle: true
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return context.label + ': ' + context.parsed + ' time(s)';
-                            }
-                        }
-                    }
+           options: {
+    responsive: true,
+    maintainAspectRatio: true,
+
+    // ✅ CLICK FUNCTION ADD KIYA
+    onClick: function(evt, elements) {
+        if (elements.length > 0) {
+            const index = elements[0].index;
+
+            // Get disease name
+            const diseaseName = data.disease_frequency[index].disease;
+
+            // Redirect to detail page
+            window.location.href = `/disease/${encodeURIComponent(diseaseName)}`;
+        }
+    },
+
+    plugins: {
+        legend: {
+            position: 'bottom',
+            labels: {
+                font: { size: 11 },
+                padding: 15,
+                usePointStyle: true
+            }
+        },
+        tooltip: {
+            callbacks: {
+                label: function(context) {
+                    return context.label + ': ' + context.parsed + ' time(s)';
                 }
             }
+        }
+    }
+}
         });
     }
     
