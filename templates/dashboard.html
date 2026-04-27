@@ -405,6 +405,8 @@
         
         const diseaseLabels = data.recent_predictions.slice().reverse().map(p => p.date);
         const diseaseCounts = data.recent_predictions.slice().reverse().map((p, i) => i + 1);
+
+        
         
         const diseaseCtx = document.getElementById('diseaseHistoryChart').getContext('2d');
         diseaseChart = new Chart(diseaseCtx, {
